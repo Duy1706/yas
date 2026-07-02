@@ -1,0 +1,23 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Tên Job này sẽ xuất hiện trên GitHub để bạn chọn làm điều kiện bắt buộc
+  kiem-tra-ci:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Phase 1 - Run Test
+      run: |
+        echo "Running tests..."
+
+    - name: Phase 2 - Run Build
+      run: |
+        echo "Building system..."

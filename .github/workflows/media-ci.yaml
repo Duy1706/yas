@@ -33,6 +33,7 @@ jobs:
       statuses: write
     env:
       FROM_ORIGINAL_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main' || github.event_name == 'push' }}
+      HAS_SONAR_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -74,7 +75,7 @@ jobs:
 
       # QUÉT BẢO MẬT & CHẤT LƯỢNG CODE (Đáp ứng Yêu cầu nâng cao 7c)
       - name: Analyze with sonar cloud
-        if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
+        if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' && env.HAS_SONAR_TOKEN == 'true' && github.repository_owner == 'nashtech-garage' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f media

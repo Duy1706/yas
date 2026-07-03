@@ -2,7 +2,9 @@ name: media service ci
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - '**'          # Cấu hình Yêu cầu số 4: Quét tất cả các branch
+      - '!main'       # Loại trừ đẩy trực tiếp vào main
     paths:
       - "media/**"
       - ".github/workflows/actions/action.yaml"
@@ -18,37 +20,57 @@ on:
   workflow_dispatch:
 
 jobs:
-  Build:
+  # ==========================================
+  # PHASE 1: TEST & QUALITY/SECURITY ANALYSIS
+  # ==========================================
+  Test:
     runs-on: ubuntu-latest
     env:
-      FROM_ORIGINAL_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main' }}
+      FROM_ORIGINAL_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name == github.repository || github.ref == 'refs/heads/main' || github.event_name == 'push' }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
+
       - uses: ./.github/workflows/actions
-      - name: Run Maven Build Command
-        run: mvn clean install -pl media -am
+
+      # Chạy kiểm tra định dạng code (Checkstyle)
       - name: Run Maven Checkstyle
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
         run: mvn checkstyle:checkstyle -pl media -am -Dcheckstyle.output.file=media-checkstyle-result.xml
+
       - name: Upload Checkstyle Result
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
         uses: jwgmeligmeyling/checkstyle-github-action@master
         with:
           path: '**/media-checkstyle-result.xml'
-      - name: Test Results
+
+      # CHẠY TESTCASE & XUẤT BÁO CÁO (Đáp ứng Yêu cầu số 5)
+      - name: Run Maven Test Command
+        run: mvn test -pl media -am
+
+      - name: Upload Test Results (Artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: media-test-results
+          path: "media/target/surefire-reports/*.xml"
+
+      - name: Test Results Reporter (Hiển thị giao diện PR)
         uses: dorny/test-reporter@v1
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' && (success() || failure()) }}
         with:
           name: Media-Service-Unit-Test-Results
           path: "media/**/*-reports/TEST*.xml"
           reporter: java-junit
+
+      # QUÉT BẢO MẬT & CHẤT LƯỢNG CODE (Đáp ứng Yêu cầu nâng cao 7c)
       - name: Analyze with sonar cloud
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f media
+
       - name: OWASP Dependency Check
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
         uses: dependency-check/Dependency-Check_Action@main
@@ -58,22 +80,57 @@ jobs:
           project: 'yas'
           path: '.'
           format: 'HTML'
+
       - name: Upload OWASP Dependency Check results
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v4
         with:
           name: OWASP Dependency Check Report
           path: ${{github.workspace}}/reports
+
+      # ĐỘ PHỦ TESTCASE JACOCO (Đáp ứng Yêu cầu số 5 & Nâng cao 7b)
       - name: Add coverage report to PR
         uses: madrapps/jacoco-report@v1.6.1
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
         with:
           paths: ${{github.workspace}}/media/target/site/jacoco/jacoco.xml
           token: ${{secrets.GITHUB_TOKEN}}
-          min-coverage-overall: 80
+          min-coverage-overall: 70            # Đã chỉnh về >70% theo Yêu cầu 7b
           min-coverage-changed-files: 60
           title: 'Media Coverage Report'
           update-comment: true
+
+      - name: Upload Jacoco Coverage Report (Artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: media-jacoco-coverage
+          path: ${{github.workspace}}/media/target/site/jacoco/
+
+  # ==========================================
+  # PHASE 2: BUILD & DEPLOYMENT
+  # ==========================================
+  Build:
+    needs: Test # Ép buộc Phase Test phải PASS hoàn toàn thì mới cho chạy Phase Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/workflows/actions
+
+      # THỰC HIỆN BUILD (Bỏ qua chạy lại test để tiết kiệm thời gian)
+      - name: Run Maven Build Command
+        run: mvn clean install -pl media -am -DskipTests
+
+      - name: Upload Build Artifact (.jar)
+        uses: actions/upload-artifact@v4
+        with:
+          name: media-service-jar
+          path: "media/target/*.jar"
+
+      # ĐÓNG GÓI VÀ ĐẨY DOCKER IMAGE (Chỉ chạy khi code đã vào nhánh main)
       - name: Log in to the Container registry
         if: ${{ github.ref == 'refs/heads/main' }}
         uses: docker/login-action@v3
@@ -81,10 +138,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build and push Docker images
         if: ${{ github.ref == 'refs/heads/main' }}
         uses: docker/build-push-action@v6
         with:
           context: ./media
           push: true
-          tags: ghcr.io/nashtech-garage/yas-media:latest
+          tags: ghcr.io/${{ github.repository }}/yas-media:latest # Đã sửa để đẩy về đúng repo của bạn

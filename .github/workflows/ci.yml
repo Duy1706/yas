@@ -1,13 +1,19 @@
 name: Continuous Integration
 
+# Cấu hình kích hoạt (Trigger)
 on:
+  # 1. Chạy CI khi có ai đó PUSH code lên bất kỳ branch nào (trừ main)
   push:
-    branches: [ main ]
+    branches:
+      - '**'          # Dấu '**' nghĩa là tất cả các branch đều được quét và chạy
+      - '!main'       # Dấu '!' để loại trừ nhánh main (vì main đã được quét riêng khi PR)
+
+  # 2. Chạy CI khi có ai đó tạo Pull Request (PR) hướng về nhánh main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
-  # Tên Job này sẽ xuất hiện trên GitHub để bạn chọn làm điều kiện bắt buộc
   kiem-tra-ci:
     runs-on: ubuntu-latest
     steps:
@@ -16,8 +22,8 @@ jobs:
 
     - name: Phase 1 - Run Test
       run: |
-        echo "Running tests..."
+        echo "Running tests for branch: ${{ github.ref_name }}"
 
     - name: Phase 2 - Run Build
       run: |
-        echo "Building system..."
+        echo "Building system for branch: ${{ github.ref_name }}"

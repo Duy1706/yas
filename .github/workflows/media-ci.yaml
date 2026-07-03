@@ -54,25 +54,22 @@ jobs:
       # CHẠY TESTCASE & XUẤT BÁO CÁO (Đáp ứng Yêu cầu số 5)
       - name: Run Maven Test Command
         run: |
-          mvn -B clean install -DskipTests -F pom.xml -pl common-library -am
-          mvn -B -pl media jacoco:prepare-agent test jacoco:report
+          mvn -B clean verify -pl media -am
 
       - name: Upload Test Results (Artifact)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: media-test-results
-          path: |
-            media/target/surefire-reports/TEST-*.xml
-            media/target/failsafe-reports/TEST-*.xml
+          path: media/target/*-reports/TEST-*.xml
           if-no-files-found: warn
 
       - name: Test Results Reporter (Hiển thị giao diện PR)
         uses: dorny/test-reporter@v1
-        if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' && (success() || failure()) }}
+        if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' && (success() || failure()) && hashFiles('media/target/*-reports/TEST-*.xml') != '' }}
         with:
           name: Media-Service-Unit-Test-Results
-          path: "media/**/*-reports/TEST*.xml"
+          path: media/target/*-reports/TEST-*.xml
           reporter: java-junit
 
       # QUÉT BẢO MẬT & CHẤT LƯỢNG CODE (Đáp ứng Yêu cầu nâng cao 7c)
@@ -102,7 +99,7 @@ jobs:
       # ĐỘ PHỦ TESTCASE JACOCO (Đáp ứng Yêu cầu số 5 & Nâng cao 7b)
       - name: Add coverage report to PR
         uses: madrapps/jacoco-report@v1.6.1
-        if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
+        if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' && hashFiles('media/target/site/jacoco/jacoco.xml') != '' }}
         with:
           paths: ${{github.workspace}}/media/target/site/jacoco/jacoco.xml
           token: ${{secrets.GITHUB_TOKEN}}

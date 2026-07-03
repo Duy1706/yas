@@ -23,7 +23,8 @@ jobs:
   # ==========================================
   # PHASE 1: TEST & QUALITY/SECURITY ANALYSIS
   # ==========================================
-  Test:
+  test:
+    name: Test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -53,15 +54,18 @@ jobs:
       # CHẠY TESTCASE & XUẤT BÁO CÁO (Đáp ứng Yêu cầu số 5)
       - name: Run Maven Test Command
         run: |
-          mvn clean install -DskipTests -F pom.xml -pl common-library -am
-          mvn test -pl media
+          mvn -B clean install -DskipTests -F pom.xml -pl common-library -am
+          mvn -B -pl media jacoco:prepare-agent test jacoco:report
 
       - name: Upload Test Results (Artifact)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: media-test-results
-          path: "media/target/surefire-reports/*.xml"
+          path: |
+            media/target/surefire-reports/TEST-*.xml
+            media/target/failsafe-reports/TEST-*.xml
+          if-no-files-found: warn
 
       - name: Test Results Reporter (Hiển thị giao diện PR)
         uses: dorny/test-reporter@v1
@@ -112,13 +116,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: media-jacoco-coverage
-          path: ${{github.workspace}}/media/target/site/jacoco/
+          path: media/target/site/jacoco/
+          if-no-files-found: warn
 
   # ==========================================
   # PHASE 2: BUILD & DEPLOYMENT
   # ==========================================
-  Build:
-    needs: Test # Ép buộc Phase Test phải PASS hoàn toàn thì mới cho chạy Phase Build
+  build:
+    name: Build
+    needs: test # Ép buộc Phase Test phải PASS hoàn toàn thì mới cho chạy Phase Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

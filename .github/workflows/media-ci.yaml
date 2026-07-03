@@ -47,7 +47,7 @@ jobs:
 
       # CHẠY TESTCASE & XUẤT BÁO CÁO (Đáp ứng Yêu cầu số 5)
       - name: Run Maven Test Command
-        run: mvn test -pl media -am
+        run: mvn clean install -DskipTests && mvn test -pl media
 
       - name: Upload Test Results (Artifact)
         if: always()

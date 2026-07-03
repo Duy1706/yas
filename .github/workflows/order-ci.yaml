@@ -2,7 +2,9 @@ name: order service ci
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - '**'          # Cấu hình Yêu cầu số 4: Quét tất cả các branch
+      - '!main'       # Loại trừ đẩy trực tiếp vào main
     paths:
       - "order/**"
       - ".github/workflows/actions/action.yaml"

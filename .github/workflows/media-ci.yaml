@@ -43,13 +43,10 @@ jobs:
 
       - uses: ./.github/workflows/actions
 
-      - name: Install common-library dependency
-        run: mvn -B -U clean install -pl common-library -am -DskipTests -Djacoco.skip=true -Drevision=1.0-SNAPSHOT
-
       # Chạy kiểm tra định dạng code (Checkstyle)
       - name: Run Maven Checkstyle
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
-        run: mvn -B checkstyle:checkstyle -f media/pom.xml -Dcheckstyle.output.file=media-checkstyle-result.xml -Drevision=1.0-SNAPSHOT
+        run: mvn -B -U clean package checkstyle:checkstyle -pl media -am -DskipTests -Djacoco.skip=true -Drevision=1.0-SNAPSHOT -Dcheckstyle.output.file=media-checkstyle-result.xml
 
       - name: Upload Checkstyle Result
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
@@ -58,10 +55,9 @@ jobs:
           path: '**/media-checkstyle-result.xml'
 
       # CHẠY TESTCASE & XUẤT BÁO CÁO (Đáp ứng Yêu cầu số 5)
-      # Chạy verify để test, tạo JaCoCo report và fail nếu coverage của media <= 70%.
-      - name: Run Maven Verify, Tests and Generate JaCoCo Report
+      - name: Run Maven Test Command
         run: |
-          mvn -B -U clean verify -f media/pom.xml -Drevision=1.0-SNAPSHOT
+          mvn -B -U clean verify -pl media -am -Drevision=1.0-SNAPSHOT "-Djacoco.check.includes=com/yas/media/**"
 
       - name: Upload Test Results (Artifact)
         if: always()
@@ -84,7 +80,7 @@ jobs:
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' && env.HAS_SONAR_TOKEN == 'true' && github.repository_owner == 'nashtech-garage' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f media/pom.xml -Drevision=1.0-SNAPSHOT
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -pl media -am -Drevision=1.0-SNAPSHOT
 
       - name: OWASP Dependency Check
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
@@ -106,7 +102,7 @@ jobs:
       # ĐỘ PHỦ TESTCASE JACOCO (Đáp ứng Yêu cầu số 5 & Nâng cao 7b)
       - name: Add coverage report to PR
         uses: madrapps/jacoco-report@v1.6.1
-        if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' && hashFiles('media/target/site/jacoco/jacoco.xml') != '' }}
+        if: ${{ always() && env.FROM_ORIGINAL_REPOSITORY == 'true' && hashFiles('media/target/site/jacoco/jacoco.xml') != '' }}
         with:
           paths: ${{github.workspace}}/media/target/site/jacoco/jacoco.xml
           token: ${{secrets.GITHUB_TOKEN}}
@@ -138,11 +134,8 @@ jobs:
       - uses: ./.github/workflows/actions
 
       # THỰC HIỆN BUILD (Bỏ qua chạy lại test để tiết kiệm thời gian)
-      - name: Install common-library dependency
-        run: mvn -B -U clean install -pl common-library -am -DskipTests -Djacoco.skip=true -Drevision=1.0-SNAPSHOT
-
       - name: Run Maven Build Command
-        run: mvn -B -U clean package -f media/pom.xml -DskipTests -Djacoco.skip=true -Drevision=1.0-SNAPSHOT
+        run: mvn -B -U clean package -pl media -am -DskipTests -Djacoco.skip=true -Drevision=1.0-SNAPSHOT
 
       - name: Upload Build Artifact (.jar)
         uses: actions/upload-artifact@v4

@@ -78,7 +78,7 @@ jobs:
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' && env.HAS_SONAR_TOKEN == 'true' && github.repository_owner == 'nashtech-garage' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f media
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -pl media -am
 
       - name: OWASP Dependency Check
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}

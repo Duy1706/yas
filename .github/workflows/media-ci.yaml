@@ -47,7 +47,7 @@ jobs:
       # Chạy kiểm tra định dạng code (Checkstyle)
       - name: Run Maven Checkstyle
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
-        run: mvn checkstyle:checkstyle -pl media -am -Dcheckstyle.output.file=media-checkstyle-result.xml
+        run: mvn checkstyle:checkstyle -pl media -am -Dcheckstyle.output.file=media-checkstyle-result.xml 
 
       - name: Upload Checkstyle Result
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
@@ -58,7 +58,7 @@ jobs:
       # CHẠY TESTCASE & XUẤT BÁO CÁO (Đáp ứng Yêu cầu số 5)
       - name: Run Maven Test Command
         run: |
-          mvn -B clean verify -pl media 
+          mvn -B clean verify -pl media -Drevision=1.0-SNAPSHOT
 
       - name: Upload Test Results (Artifact)
         if: always()

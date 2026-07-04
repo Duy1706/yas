@@ -56,13 +56,9 @@ jobs:
           path: '**/media-checkstyle-result.xml'
 
       # CHẠY TESTCASE & XUẤT BÁO CÁO (Đáp ứng Yêu cầu số 5)
-      - name: Run Maven Test Command
+      - name: Run Maven Test Command and Generate JaCoCo Report
         run: |
-          mvn -B -U clean test -pl media -am -Drevision=1.0-SNAPSHOT
-
-      - name: Generate JaCoCo XML Report
-        run: |
-          mvn -B jacoco:report -pl media -am -Drevision=1.0-SNAPSHOT
+          mvn -B -U clean test jacoco:report -pl media -am -Drevision=1.0-SNAPSHOT
 
       - name: Upload Test Results (Artifact)
         if: always()
@@ -164,3 +160,4 @@ jobs:
           context: ./media
           push: true
           tags: ghcr.io/${{ github.repository }}/yas-media:latest # Đã sửa để đẩy về đúng repo của bạn
+g

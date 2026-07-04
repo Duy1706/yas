@@ -7,6 +7,7 @@ on:
       - '!main'       # Loại trừ đẩy trực tiếp vào main
     paths:
       - "media/**"
+      - "common-library/**"
       - ".github/workflows/actions/action.yaml"
       - ".github/workflows/media-ci.yaml"
       - "pom.xml"
@@ -14,6 +15,7 @@ on:
     branches: [ "main" ]
     paths:
       - "media/**"
+      - "common-library/**"
       - ".github/workflows/actions/action.yaml"
       - ".github/workflows/media-ci.yaml"
       - "pom.xml"
@@ -47,7 +49,7 @@ jobs:
       # Chạy kiểm tra định dạng code (Checkstyle)
       - name: Run Maven Checkstyle
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
-        run: mvn -B checkstyle:checkstyle -pl media -am -Dcheckstyle.output.file=media-checkstyle-result.xml -Drevision=1.0-SNAPSHOT
+        run: mvn -B checkstyle:checkstyle -pl common-library,media -Dcheckstyle.output.file=media-checkstyle-result.xml -Drevision=1.0-SNAPSHOT
 
       - name: Upload Checkstyle Result
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
@@ -56,9 +58,11 @@ jobs:
           path: '**/media-checkstyle-result.xml'
 
       # CHẠY TESTCASE & XUẤT BÁO CÁO (Đáp ứng Yêu cầu số 5)
-      - name: Run Maven Test Command and Generate JaCoCo Report
+      # Dùng phase package thay vì test vì media phụ thuộc common-library cả jar và test-jar.
+      # Không dùng verify để tránh kích hoạt jacoco:check của common-library.
+      - name: Run Maven Package, Tests and Generate JaCoCo Report
         run: |
-          mvn -B -U clean test jacoco:report -pl media -am -Drevision=1.0-SNAPSHOT
+          mvn -B -U clean package jacoco:report -pl common-library,media -Drevision=1.0-SNAPSHOT
 
       - name: Upload Test Results (Artifact)
         if: always()
@@ -81,7 +85,7 @@ jobs:
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' && env.HAS_SONAR_TOKEN == 'true' && github.repository_owner == 'nashtech-garage' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -pl media -am -Drevision=1.0-SNAPSHOT
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -pl common-library,media -Drevision=1.0-SNAPSHOT
 
       - name: OWASP Dependency Check
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
@@ -136,7 +140,7 @@ jobs:
 
       # THỰC HIỆN BUILD (Bỏ qua chạy lại test để tiết kiệm thời gian)
       - name: Run Maven Build Command
-        run: mvn -B clean install -pl media -am -DskipTests -Djacoco.skip=true -Drevision=1.0-SNAPSHOT
+        run: mvn -B -U clean package -pl common-library,media -DskipTests -Djacoco.skip=true -Drevision=1.0-SNAPSHOT
 
       - name: Upload Build Artifact (.jar)
         uses: actions/upload-artifact@v4

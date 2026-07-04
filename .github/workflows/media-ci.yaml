@@ -41,6 +41,9 @@ jobs:
 
       - uses: ./.github/workflows/actions
 
+      - name: Install common-library dependency
+        run: mvn -B clean install -DskipTests -Djacoco.skip=true -pl common-library -am
+
       # Chạy kiểm tra định dạng code (Checkstyle)
       - name: Run Maven Checkstyle
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
@@ -133,7 +136,7 @@ jobs:
 
       # THỰC HIỆN BUILD (Bỏ qua chạy lại test để tiết kiệm thời gian)
       - name: Run Maven Build Command
-        run: mvn clean install -pl media -am -DskipTests
+        run: mvn -B clean install -pl media -am -DskipTests -Djacoco.skip=true
 
       - name: Upload Build Artifact (.jar)
         uses: actions/upload-artifact@v4

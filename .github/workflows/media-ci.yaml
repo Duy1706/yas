@@ -41,13 +41,16 @@ jobs:
 
       - uses: ./.github/workflows/actions
 
-      - name: Install common-library dependency
-        run: mvn -B clean install -DskipTests -Djacoco.skip=true -pl common-library -am
+      - name: Install parent POM
+        run: mvn -B -N install -DskipTests -Djacoco.skip=true -Drevision=1.0-SNAPSHOT
+
+      - name: Install media dependencies without tests and coverage
+        run: mvn -B install -pl media -am -DskipTests -Djacoco.skip=true -Drevision=1.0-SNAPSHOT
 
       # Chạy kiểm tra định dạng code (Checkstyle)
       - name: Run Maven Checkstyle
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
-        run: mvn checkstyle:checkstyle -pl media -am -Dcheckstyle.output.file=media-checkstyle-result.xml 
+        run: mvn -B checkstyle:checkstyle -pl media -Dcheckstyle.output.file=media-checkstyle-result.xml -Drevision=1.0-SNAPSHOT
 
       - name: Upload Checkstyle Result
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
@@ -58,7 +61,7 @@ jobs:
       # CHẠY TESTCASE & XUẤT BÁO CÁO (Đáp ứng Yêu cầu số 5)
       - name: Run Maven Test Command
         run: |
-          mvn -B clean verify -pl media -Drevision=1.0-SNAPSHOT
+          mvn -B -U clean verify -pl media -Drevision=1.0-SNAPSHOT
 
       - name: Upload Test Results (Artifact)
         if: always()
@@ -81,7 +84,7 @@ jobs:
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' && env.HAS_SONAR_TOKEN == 'true' && github.repository_owner == 'nashtech-garage' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -pl media -am
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -pl media -am -Drevision=1.0-SNAPSHOT
 
       - name: OWASP Dependency Check
         if: ${{ env.FROM_ORIGINAL_REPOSITORY == 'true' }}
@@ -136,7 +139,7 @@ jobs:
 
       # THỰC HIỆN BUILD (Bỏ qua chạy lại test để tiết kiệm thời gian)
       - name: Run Maven Build Command
-        run: mvn -B clean install -pl media -am -DskipTests -Djacoco.skip=true
+        run: mvn -B clean install -pl media -am -DskipTests -Djacoco.skip=true -Drevision=1.0-SNAPSHOT
 
       - name: Upload Build Artifact (.jar)
         uses: actions/upload-artifact@v4

@@ -160,4 +160,3 @@ jobs:
           context: ./media
           push: true
           tags: ghcr.io/${{ github.repository }}/yas-media:latest # Đã sửa để đẩy về đúng repo của bạn
-g
